@@ -26,6 +26,19 @@ from collections import Counter
 
 from online_user_model import OnlineUserModel
 
+# Color definitions
+COLOR = {
+    "HEADER": "\033[95m",
+    "BLUE": "\033[94m",
+    "CYAN": "\033[96m",
+    "GREEN": "\033[92m",
+    "YELLOW": "\033[93m",
+    "RED": "\033[91m",
+    "BOLD": "\033[1m",
+    "UNDERLINE": "\033[4m",
+    "END": "\033[0m"
+}
+
 # paths
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -41,7 +54,7 @@ DEVICE = "cpu"
 # config
 with open(os.path.join(CONFIG_DIR, "recommender_policy.yaml"), "r") as f:
     CONFIG = yaml.safe_load(f)
-º
+
 with open(os.path.join(ARTIFACTS_DIR, "movie_map.json")) as f:
     movie_map = {int(k): v for k, v in json.load(f).items()}
 
@@ -71,7 +84,7 @@ checkpoint = torch.load(MODEL_PATH, map_location="cpu")
 embed_dim = checkpoint["item_embedding.weight"].shape[1]
 num_items = checkpoint["item_embedding.weight"].shape[0]
 
-print(f"Checkpoint items: {num_items}, embed_dim: {embed_dim}")
+print(f"{COLOR['CYAN']}Checkpoint items: {num_items}, embed_dim: {embed_dim}{COLOR['END']}")
 
 # create a minimal item-tower-only model
 class ItemTower(nn.Module):
@@ -97,18 +110,14 @@ item_model.load_state_dict({
 
 item_model.eval()
 
-print("Extracting movie embeddings")
-
-with torch.no_grad():
-    item_ids = torch.arange(num_items, dtype=torch.long)
-    movie_embeddings = item_model(item_ids).numpy()
+print(f"{COLOR['CYAN']}Extracting movie embeddings{COLOR['END']}")
 
 
-print("\nEnter exactly 4 favorite movies (exact titles):\n")
+print(f"\n{COLOR['CYAN']}{COLOR['BOLD']}Enter exactly 4 favorite movies (exact titles):{COLOR['END']}\n")
 
 favorite_titles = []
 while len(favorite_titles) < 4:
-    title = input(f"{len(favorite_titles)+1}. ").strip()
+    title = input(f"{COLOR['YELLOW']}{len(favorite_titles)+1}. {COLOR['END']}").strip()
     if title:
         favorite_titles.append(title)
 
@@ -117,9 +126,9 @@ favorites = movies[
 ]
 
 if len(favorites) < 4:
-    raise ValueError("One or more favorite titles not found. I suggest looking for the exact movie name in the file 'processed/movie_features.csv' (Ctrl + F)")
+    raise ValueError(f"{COLOR['RED']}One or more favorite titles not found. I suggest looking for the exact movie name in the file 'processed/movie_features.csv' (Ctrl + F){COLOR['END']}")
 
-print("\nMatched favorites:")
+print(f"\n{COLOR['GREEN']}Matched favorites:{COLOR['END']}")
 print(favorites[["movieId", "title"]])
 
 genre_counter = Counter()
@@ -150,8 +159,8 @@ user = OnlineUserModel(
 user.initialize_from_movies(np.array(movie_indices))
 
 # loop
-print("\n--- Interactive Recommendation Session ---")
-print("y = like | n = dislike | s = skip | i = info | q = quit")
+print(f"\n{COLOR['CYAN']}{COLOR['BOLD']}--- Interactive Recommendation Session ---{COLOR['END']}")
+print(f"{COLOR['YELLOW']}y = like | n = dislike | s = skip | i = info | q = quit{COLOR['END']}")
 
 step = 1
 
@@ -200,7 +209,7 @@ while True:
         ranked.append((idx, movie_id, score))
 
     if not ranked:
-        print("\n⚠ No more valid recommendations.")
+        print(f"\n{COLOR['YELLOW']}⚠ No more valid recommendations.{COLOR['END']}")
         break
 
     ranked.sort(key=lambda x: x[2], reverse=True)
@@ -208,43 +217,43 @@ while True:
     rec_idx, movie_id, _ = ranked[0]
     row = movies[movies["movieId"] == movie_id].iloc[0]
 
-    print(f"\nRecommendation #{step}")
-    print(row["title"])
+    print(f"\n{COLOR['CYAN']}{COLOR['BOLD']}Recommendation #{step}{COLOR['END']}")
+    print(f"{COLOR['GREEN']}{row['title']}{COLOR['END']}")
 
     while True:
-        fb = input("Feedback (y/n/s/i/q): ").strip().lower()
+        fb = input(f"{COLOR['YELLOW']}Feedback (y/n/s/i/q): {COLOR['END']}").strip().lower()
 
         if fb == "i":
             if movie_id in metadata.index:
                 meta = metadata.loc[movie_id]
-                print("\nMOVIE INFO")
-                print("Title:", meta["title"])
-                print("Release date:", meta["release_date"])
-                print("Rating:", meta["tmdb_vote_avg"])
-                print("Popularity:", meta["tmdb_popularity"])
-                print("\nOverview:")
+                print(f"\n{COLOR['BLUE']}{COLOR['BOLD']}MOVIE INFO{COLOR['END']}")
+                print(f"{COLOR['CYAN']}Title:{COLOR['END']}", meta["title"])
+                print(f"{COLOR['CYAN']}Release date:{COLOR['END']}", meta["release_date"])
+                print(f"{COLOR['CYAN']}Rating:{COLOR['END']}", meta["tmdb_vote_avg"])
+                print(f"{COLOR['CYAN']}Popularity:{COLOR['END']}", meta["tmdb_popularity"])
+                print(f"\n{COLOR['CYAN']}Overview:{COLOR['END']}")
                 print(meta["overview"])
             else:
-                print("No metadata available.")
-            print("\n---")
+                print(f"{COLOR['YELLOW']}No metadata available.{COLOR['END']}")
+            print(f"\n{COLOR['BLUE']}---{COLOR['END']}")
             continue
 
         if fb == "q":
-            print("\nProgram closed.")
+            print(f"\n{COLOR['RED']}Program closed.{COLOR['END']}")
             exit()
 
         if fb in ("y", "n", "s"):
             if fb == "y":
                 user.update(rec_idx, feedback=1)
-                print(":) liked")
+                print(f"{COLOR['GREEN']}:) liked{COLOR['END']}")
             elif fb == "n":
                 user.update(rec_idx, feedback=-1)
-                print(":( disliked")
+                print(f"{COLOR['RED']}:( disliked{COLOR['END']}")
             else:
                 user.update(rec_idx, feedback=0)
-                print("skipped")
+                print(f"{COLOR['YELLOW']}skipped{COLOR['END']}")
             break
 
-        print("Invalid input.")
+        print(f"{COLOR['RED']}Invalid input.{COLOR['END']}")
 
     step += 1

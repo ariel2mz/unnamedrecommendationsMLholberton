@@ -29,6 +29,19 @@ from collections import Counter
 
 from online_user_model import OnlineUserModel
 
+# Color definitions
+COLOR = {
+    "HEADER": "\033[95m",
+    "BLUE": "\033[94m",
+    "CYAN": "\033[96m",
+    "GREEN": "\033[92m",
+    "YELLOW": "\033[93m",
+    "RED": "\033[91m",
+    "BOLD": "\033[1m",
+    "UNDERLINE": "\033[4m",
+    "END": "\033[0m"
+}
+
 # paths
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -67,11 +80,11 @@ movies = pd.read_csv(
 movies["genres"] = movies["genres"].fillna("").str.split("|")
 
 # 4 favorite movie start
-print("\n Enter exactly 4 favorite movies (exact titles):\n")
+print(f"\n{COLOR['CYAN']}{COLOR['BOLD']}Enter exactly 4 favorite movies (exact titles):{COLOR['END']}\n")
 
 favorite_titles = []
 while len(favorite_titles) < 4:
-    title = input(f"{len(favorite_titles)+1}. ").strip()
+    title = input(f"{COLOR['YELLOW']}{len(favorite_titles)+1}. {COLOR['END']}").strip()
     if title:
         favorite_titles.append(title)
 
@@ -83,9 +96,9 @@ favorites = movies[
 ]
 
 if favorites.empty or len(favorites) < 4:
-    raise ValueError("One or more favorite titles not found. I suggest looking for the exact movie name in the file 'processed/movie_features.csv' (Ctrl + F)")
+    raise ValueError(f"{COLOR['RED']}One or more favorite titles not found. I suggest looking for the exact movie name in the file 'processed/movie_features.csv' (Ctrl + F){COLOR['END']}")
 
-print("\nMatched favorites:")
+print(f"\n{COLOR['GREEN']}Matched favorites:{COLOR['END']}")
 print(favorites[["movieId", "title"]])
 
 # genre profile
@@ -118,8 +131,8 @@ user = OnlineUserModel(
 user.initialize_from_movies(np.array(movie_indices))
 
 # loop for input
-print("\n--- Interactive Recommendation Session ---")
-print("y = like | n = dislike | s = skip | i = info | q = quit")
+print(f"\n{COLOR['CYAN']}{COLOR['BOLD']}--- Interactive Recommendation Session ---{COLOR['END']}")
+print(f"{COLOR['YELLOW']}y = like | n = dislike | s = skip | i = info | q = quit{COLOR['END']}")
 
 step = 1
 
@@ -169,7 +182,7 @@ while True:
         ranked.append((idx, movie_id, score))
 
     if not ranked:
-        print("\n No more valid recommendations.")
+        print(f"\n{COLOR['YELLOW']}No more valid recommendations.{COLOR['END']}")
         break
 
     ranked.sort(key=lambda x: x[2], reverse=True)
@@ -179,48 +192,48 @@ while True:
 
     title = row["title"]
 
-    print(f"\nRecommendation #{step}")
-    print("", title)
+    print(f"\n{COLOR['CYAN']}{COLOR['BOLD']}Recommendation #{step}{COLOR['END']}")
+    print(f"{COLOR['GREEN']} {title}{COLOR['END']}")
 
     # does the user like the movie
     while True:
-        fb = input("Feedback (y/n/s/i/q): ").strip().lower()
+        fb = input(f"{COLOR['YELLOW']}Feedback (y/n/s/i/q): {COLOR['END']}").strip().lower()
 
         if fb == "i":
-            print("\nMOVIE INFO")
+            print(f"\n{COLOR['BLUE']}{COLOR['BOLD']}MOVIE INFO{COLOR['END']}")
 
             if movie_id in metadata.index:
                 meta = metadata.loc[movie_id]
 
-                print("Title:", meta["title"])
-                print("Release date:", meta["release_date"])
-                print("Rating:", meta["tmdb_vote_avg"])
-                print("Popularity:", meta["tmdb_popularity"])
+                print(f"{COLOR['CYAN']}Title:{COLOR['END']}", meta["title"])
+                print(f"{COLOR['CYAN']}Release date:{COLOR['END']}", meta["release_date"])
+                print(f"{COLOR['CYAN']}Rating:{COLOR['END']}", meta["tmdb_vote_avg"])
+                print(f"{COLOR['CYAN']}Popularity:{COLOR['END']}", meta["tmdb_popularity"])
 
-                print("\nOverview:")
+                print(f"\n{COLOR['CYAN']}Overview:{COLOR['END']}")
                 print(meta["overview"])
             else:
-                print("No metadata available for this movie.")
+                print(f"{COLOR['YELLOW']}No metadata available for this movie.{COLOR['END']}")
 
-            print("\n---")
+            print(f"\n{COLOR['BLUE']}---{COLOR['END']}")
             continue  # ask again
 
         if fb == "q":
-            print("\n Program Closed")
+            print(f"\n{COLOR['RED']}Program Closed{COLOR['END']}")
             exit()
 
         if fb in ("y", "n", "s"):
             if fb == "y":
                 user.update(rec_idx, feedback=1)
-                print(":) liked")
+                print(f"{COLOR['GREEN']}:) liked{COLOR['END']}")
             elif fb == "n":
                 user.update(rec_idx, feedback=-1)
-                print(":( disliked")
+                print(f"{COLOR['RED']}:( disliked{COLOR['END']}")
             else:
                 user.update(rec_idx, feedback=0)
-                print("skipped")
+                print(f"{COLOR['YELLOW']}skipped{COLOR['END']}")
             break
 
-        print("Invalid input, try again.")
+        print(f"{COLOR['RED']}Invalid input, try again.{COLOR['END']}")
 
     step += 1
