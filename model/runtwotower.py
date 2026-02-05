@@ -64,7 +64,6 @@ with open(os.path.join(PROCESSED_DIR, "movie_popularity.json")) as f:
 max_pop = max(popularity.values())
 
 # loadmodel
-print("Loading two-tower model (item tower only)...")
 
 checkpoint = torch.load(MODEL_PATH, map_location="cpu")
 
@@ -98,13 +97,12 @@ item_model.load_state_dict({
 
 item_model.eval()
 
-print("Extracting movie embeddings...")
+print("Extracting movie embeddings")
 
 with torch.no_grad():
     item_ids = torch.arange(num_items, dtype=torch.long)
     movie_embeddings = item_model(item_ids).numpy()
 
-print("Movie embeddings ready:", movie_embeddings.shape)
 
 print("\nEnter exactly 4 favorite movies (exact titles):\n")
 
@@ -119,7 +117,7 @@ favorites = movies[
 ]
 
 if len(favorites) < 4:
-    raise ValueError("One or more favorite titles not found.")
+    raise ValueError("One or more favorite titles not found. I suggest looking for the exact movie name in the file 'processed/movie_features.csv' (Ctrl + F)")
 
 print("\nMatched favorites:")
 print(favorites[["movieId", "title"]])

@@ -83,7 +83,7 @@ favorites = movies[
 ]
 
 if favorites.empty or len(favorites) < 4:
-    raise ValueError("One or more favorite titles not found.")
+    raise ValueError("One or more favorite titles not found. I suggest looking for the exact movie name in the file 'processed/movie_features.csv' (Ctrl + F)")
 
 print("\nMatched favorites:")
 print(favorites[["movieId", "title"]])

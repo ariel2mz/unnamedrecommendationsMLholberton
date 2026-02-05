@@ -98,7 +98,7 @@ def main():
 
         for batch_idx, (users, items, ratings) in enumerate(train_loader):
             if batch_idx == 0:
-                print("First batch received ✔")
+                print("First batch received")
 
             users = users.to(DEVICE)
             items = items.to(DEVICE)
