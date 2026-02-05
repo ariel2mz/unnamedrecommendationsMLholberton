@@ -28,8 +28,8 @@ pip (included with Python)
 Git (for cloning the repository)
 
 Clone the repository:
-`` git clone https://github.com/ariel2mz/recommendationprojectholberton/
-cd recommendationprojectholberton ``
+`` git clone https://github.com/ariel2mz/unnamedrecommendationsMLholberton/
+cd unnamedrecommendationsMLholberton ``
 
 Install the required Python packages:
 `` pip install numpy pandas pyyaml ``
