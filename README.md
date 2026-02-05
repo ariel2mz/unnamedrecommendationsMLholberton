@@ -43,7 +43,7 @@ of the movie, Example: Forrest Gump (1994)
 
 # Downloadable Files
 Pretrained Two-Tower model – Required to run the Two-Tower version of the app (too large for GitHub). Not needed if you train the model yourself.
-Link placeholder.
+https://drive.google.com/file/d/1hf_hIqv5waztDCYK7oEVeZBudvL6i4CQ/view?usp=sharing
 
 Raw MovieLens dataset – Used for development and training, not required to run the app.
 https://grouplens.org/datasets/movielens/
