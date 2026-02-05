@@ -15,41 +15,39 @@ score_weight_model: 1.2
 # Minimum weighted genre affinity required
 # Range: 0.0 → 0.4
 # Lower = allows recommendations with very weak genre similarity
-# Risky users tolerate low affinity
 min_genre_affinity: 0.05
 
 # --------------------------------------------------
 # Maximum allowed genre distance
 # Range: 0.5 → 1.0
 # Higher = allows farther genre jumps
-max_genre_distance: 0.9
+max_genre_distance: 0.8
 
 # --------------------------------------------------
 # Penalty applied when genre distance is high
 # Range: 0.0 → 1.0
 # Lower = genre mismatch hurts less
-genre_distance_penalty: 0.25
+genre_distance_penalty: 0.30
 
 # --------------------------------------------------
 # Popularity penalty strength
 # Range: 0.0 → 0.7
 # Lower = popular movies are allowed
-popularity_penalty: 0.15
+popularity_penalty: 0.12
 
 # --------------------------------------------------
 # Extra boost for genre-adjacent but uncommon matches
 # Range: 0.0 → 0.5
-# Encourages "interesting surprises"
 diversity_boost: 0.25
 
 # --------------------------------------------------
 # Upper bound of affinity where diversity boost applies
 # Range: 0.1 → 0.6
 # Higher = diversity boost applies more often
-diversity_affinity_cap: 0.45
+diversity_affinity_cap: 0.40
 
 # --------------------------------------------------
 # Random exploration probability
 # Range: 0.0 → 0.2
 # Higher = more randomness
-exploration_rate: 0.08
+exploration_rate: 0.09
