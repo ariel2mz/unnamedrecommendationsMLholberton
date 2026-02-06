@@ -112,6 +112,9 @@ item_model.eval()
 
 print(f"{COLOR['CYAN']}Extracting movie embeddings{COLOR['END']}")
 
+with torch.no_grad():
+    all_item_ids = torch.arange(num_items, dtype=torch.long)
+    movie_embeddings = item_model(all_item_ids).cpu().numpy()
 
 print(f"\n{COLOR['CYAN']}{COLOR['BOLD']}Enter exactly 4 favorite movies (exact titles):{COLOR['END']}\n")
 
