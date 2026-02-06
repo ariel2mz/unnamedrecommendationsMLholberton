@@ -16,24 +16,11 @@ DESCRIPTION:
 This script prepares the ratings data so it is more meaningful for training
 a recommender system.
 
-Instead of using raw star ratings, it transforms them to better represent
-real user preference by applying three ideas:
-1) User normalization:
-   Different users rate differently (some give high scores to everything,
-   others are more strict). For each user, the script subtracts their average
-   rating from each rating, so the model learns whether a movie was liked
-   more or less than that user’s usual taste.
-2) Popularity down-weighting:
-   Very popular movies get many ratings and can dominate the model.
-   To avoid this, ratings for popular movies are reduced in strength,
-   while less popular movies keep more influence.
-3) Time decay:
-   Older ratings are less relevant than recent ones. Ratings are weighted
-   so that newer interactions matter more, and very old ones slowly lose
-   influence.
-
-The output is a transformed version of the train, validation, and test
-datasets with a final weighted rating that is better suited for learning.
+Key properties of this version:
+- Preserves absolute user preference (likes stay positive)
+- Limits popularity dominance
+- Keeps time decay
+- Produces stable, bounded training targets
 """
 
 import pandas as pd
@@ -41,33 +28,44 @@ import numpy as np
 import json
 import os
 
+# ------------------
+# paths
+# ------------------
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROCESSED_DIR = os.path.join(BASE_DIR, "processed")
+
+TRAIN_PATH = os.path.join(PROCESSED_DIR, "train.csv")
+VAL_PATH = os.path.join(PROCESSED_DIR, "val.csv")
+TEST_PATH = os.path.join(PROCESSED_DIR, "test.csv")
+
+OUTPUT_TRAIN = os.path.join(PROCESSED_DIR, "train_transformed.csv")
+OUTPUT_VAL = os.path.join(PROCESSED_DIR, "val_transformed.csv")
+OUTPUT_TEST = os.path.join(PROCESSED_DIR, "test_transformed.csv")
+
+USER_MEANS_PATH = os.path.join(PROCESSED_DIR, "user_means.json")
+MOVIE_POP_PATH = os.path.join(PROCESSED_DIR, "movie_popularity.json")
+MAX_TIME_PATH = os.path.join(PROCESSED_DIR, "train_max_timestamp.txt")
+
+# ------------------
 # config
-TRAIN_PATH = "processed/train.csv"
-VAL_PATH = "processed/val.csv"
-TEST_PATH = "processed/test.csv"
-
-OUTPUT_TRAIN = "processed/train_transformed.csv"
-OUTPUT_VAL = "processed/val_transformed.csv"
-OUTPUT_TEST = "processed/test_transformed.csv"
-
-USER_MEANS_PATH = "processed/user_means.json"
-MOVIE_POP_PATH = "processed/movie_popularity.json"
-MAX_TIME_PATH = "processed/train_max_timestamp.txt"
-
-POPULARITY_ALPHA = 0.5
+# ------------------
 TIME_DECAY_HALF_LIFE_DAYS = 365
 
+# ------------------
 # load
+# ------------------
 print("Loading split data")
 
 train = pd.read_csv(TRAIN_PATH)
 val = pd.read_csv(VAL_PATH)
 test = pd.read_csv(TEST_PATH)
 
-for df in [train, val, test]:
+for df in (train, val, test):
     df["timestamp"] = pd.to_datetime(df["timestamp"])
 
-# find the numbers
+# ------------------
+# fit statistics (TRAIN ONLY)
+# ------------------
 print("Fitting user mean ratings (train only)")
 user_means = train.groupby("userId")["rating"].mean()
 
@@ -77,8 +75,10 @@ movie_counts = train["movieId"].value_counts()
 print("Getting max train timestamp")
 max_train_time = train["timestamp"].max()
 
-# saving user stats for later (i dont think i use them yet but i could)
-os.makedirs("processed", exist_ok=True)
+# ------------------
+# save statistics
+# ------------------
+os.makedirs(PROCESSED_DIR, exist_ok=True)
 
 with open(USER_MEANS_PATH, "w") as f:
     json.dump({str(k): float(v) for k, v in user_means.items()}, f)
@@ -89,24 +89,29 @@ with open(MOVIE_POP_PATH, "w") as f:
 with open(MAX_TIME_PATH, "w") as f:
     f.write(str(max_train_time))
 
+# ------------------
 # transform function
+# ------------------
 def transform(df):
     df = df.copy()
 
-    # control de entusiasmo
-    df["user_mean"] = df["userId"].map(user_means)
-    df["user_mean"] = df["user_mean"].fillna(0.0)
+    # ----
+    # absolute preference signal
+    # center ratings around neutral (3.0)
+    # ----
+    df["rating_centered"] = df["rating"] - 3.0
 
-    df["rating_norm"] = df["rating"] - df["user_mean"]
+    # ----
+    # popularity control (bounded)
+    # ----
+    pop = df["movieId"].map(movie_counts).fillna(1)
+    df["pop_weight"] = 1.0 / np.sqrt(1.0 + pop)
 
-    # control de populariddad
-    pop = df["movieId"].map(movie_counts)
-    pop = pop.fillna(1)
+    df["rating_pop"] = df["rating_centered"] * df["pop_weight"]
 
-    df["pop_weight"] = 1 / (pop ** POPULARITY_ALPHA)
-    df["rating_pop"] = df["rating_norm"] * df["pop_weight"]
-
-    # control de tiempo
+    # ----
+    # time decay
+    # ----
     days_diff = (max_train_time - df["timestamp"]).dt.days
     days_diff = days_diff.clip(lower=0)
 
@@ -114,24 +119,51 @@ def transform(df):
         -np.log(2) * days_diff / TIME_DECAY_HALF_LIFE_DAYS
     )
 
+    # ----
+    # final training target
+    # ----
     df["final_rating"] = df["rating_pop"] * df["time_weight"]
+
+    # stability clamp
+    df["final_rating"] = df["final_rating"].clip(-2.0, 2.0)
 
     return df
 
-# transform
+# ------------------
+# apply transform
+# ------------------
 print("Applying transformations")
 
 train_t = transform(train)
 val_t = transform(val)
 test_t = transform(test)
 
-# check if everything makes sense
+# ------------------
+# sanity checks
+# ------------------
 print("\nSanity checks:")
-print("Train final rating range:", train_t["final_rating"].min(), "->", train_t["final_rating"].max())
-print("Val final rating range:", val_t["final_rating"].min(), "->", val_t["final_rating"].max())
-print("Test final rating range:", test_t["final_rating"].min(), "->", test_t["final_rating"].max())
+print(
+    "Train final rating range:",
+    train_t["final_rating"].min(),
+    "->",
+    train_t["final_rating"].max()
+)
+print(
+    "Val final rating range:",
+    val_t["final_rating"].min(),
+    "->",
+    val_t["final_rating"].max()
+)
+print(
+    "Test final rating range:",
+    test_t["final_rating"].min(),
+    "->",
+    test_t["final_rating"].max()
+)
 
+# ------------------
 # save
+# ------------------
 print("\nSaving transformed data...")
 
 train_t.to_csv(OUTPUT_TRAIN, index=False)

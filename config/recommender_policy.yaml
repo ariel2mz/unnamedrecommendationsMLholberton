@@ -9,7 +9,7 @@
 # How much to trust the collaborative model score
 # Range: 0.5 → 1.5
 # Higher = model dominates everything else
-score_weight_model: 1.2
+score_weight_model: 1.4
 
 # --------------------------------------------------
 # Minimum weighted genre affinity required
