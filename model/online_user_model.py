@@ -1,9 +1,5 @@
 """
 Online user preference model for a movie recommender system.
-FIXED VERSION:
-- Stabilized user embedding
-- Proper normalization
-- Stronger, symmetric feedback handling
 """
 
 import numpy as np

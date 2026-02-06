@@ -1,9 +1,5 @@
 """
 Offline training script for the collaborative filtering recommender.
-FIXED VERSION:
-- Aggregates duplicate (user, movie) interactions
-- Normalizes embeddings
-- Makes SVD behave more like CF
 """
 
 import pandas as pd
@@ -96,7 +92,7 @@ user_embeddings = svd.fit_transform(R_sparse)
 movie_embeddings = svd.components_.T
 
 # ------------------
-# normalize embeddings (CRITICAL)
+# normalize embeddings
 # ------------------
 user_embeddings /= np.linalg.norm(user_embeddings, axis=1, keepdims=True) + 1e-8
 movie_embeddings /= np.linalg.norm(movie_embeddings, axis=1, keepdims=True) + 1e-8
