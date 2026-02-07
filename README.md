@@ -128,15 +128,6 @@ A Two-Tower approach would be more appropriate if the project scope were expande
 # 1. Raw dataset (initial state)
     The system starts from the original MovieLens CSV files:
 
-    data/ratings.csv
-    userId
-    movieId
-    rating (raw star rating)
-    timestamp (seconds or datetime)
-    data/movies.csv
-    movieId
-    movie metadata (title, genres, etc.)
-
     At this stage:
     All users are included (even users with very few ratings)
     All movies are included (even movies with only 1 rating)
